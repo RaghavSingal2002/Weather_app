@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weather App — Current + 7-Day Forecast</title>
+  <style>
+    :root{--bg:#071024;--card:#0b2030;--muted:#9fb3c8;--text:#e6f0f6;--accent:#2dd4bf}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#022032 0%,#071024 100%);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Noto Sans',sans-serif;color:var(--text);display:flex;align-items:center;justify-content:center;padding:24px}
+    .wrap{width:min(1000px,98vw);}
+    .app{background:linear-gradient(180deg, rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.04);border-radius:14px;padding:18px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between}
+    .title{display:flex;gap:12px;align-items:center}
+    .logo{width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,#075985,#0891b2);display:grid;place-items:center;font-weight:700}
+    h1{margin:0;font-size:18px}
+    .controls{display:flex;gap:8px;align-items:center}
+    input{padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--text);outline:none;width:220px}
+    button{padding:10px 12px;border-radius:10px;border:none;background:var(--accent);color:#012;cursor:pointer;font-weight:600}
+    .units{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px;border-radius:8px}
+    main{display:grid;grid-template-columns:2fr 1fr;gap:12px;margin-top:14px}
+    .panel{background:var(--card);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+    .current{display:flex;gap:12px;align-items:center}
+    .cond-icon{width:96px;height:96px}
+    .curr-info{display:flex;flex-direction:column}
+    .temp{font-size:48px;font-weight:800}
+    .meta{color:var(--muted);margin-top:6px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+    .pill{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;text-align:center}
+    .forecast{display:flex;flex-direction:column;gap:10px}
+    .days{display:flex;overflow-x:auto;gap:8px;padding-bottom:8px}
+    .day{min-width:120px;padding:10px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+    .day.active{box-shadow:0 6px 18px rgba(0,0,0,0.6);transform:translateY(-4px)}
+    .day .date{font-size:13px;color:var(--muted)}
+    .day .maxtemp{font-weight:700;font-size:16px}
+    .hourly{margin-top:8px}
+    table{width:100%;border-collapse:collapse}
+    td,th{padding:8px;text-align:left;font-size:13px;border-bottom:1px dashed rgba(255,255,255,0.03)}
+    .small{font-size:12px;color:var(--muted)}
+    footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
+    @media(max-width:880px){main{grid-template-columns:1fr}}  
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="app">
+      <header>
+        <div class="title">
+          <div class="logo">W</div>
+          <div>
+            <h1>Weather — Current + 7-Day Forecast</h1>
+            <div class="small">Enter city, town, pincode or coordinates. Uses WeatherAPI forecast endpoint.</div>
+          </div>
+        </div>
+        <div class="controls">
+          <input id="query" placeholder="e.g. London, Jaipur, 110001" />
+          <button id="search">Search</button>
+          <div class="units">
+            <label><input type="radio" name="unit" value="C" checked/> °C</label>
+            <label style="margin-left:8px"><input type="radio" name="unit" value="F"/> °F</label>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="panel">
+          <div id="error" class="small" style="color:#ffb4b4"></div>
+          <div id="current" class="current" style="display:none">
+            <img id="cicon" class="cond-icon" src="" alt="icon" />
+            <div class="curr-info">
+              <div id="cplace" class="small"></div>
+              <div id="ctemp" class="temp">--°</div>
+              <div id="ccond" class="meta"></div>
+              <div class="grid" style="width:420px;max-width:100%">
+                <div class="pill" id="cfeels">Feels: --</div>
+                <div class="pill" id="chumidity">Humidity: --</div>
+                <div class="pill" id="cwind">Wind: --</div>
+              </div>
+              <div class="small" id="astronomy" style="margin-top:8px"></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <strong>7-Day Forecast</strong>
+              <div class="small">Click a day to see hourly details</div>
+            </div>
+            <div id="days" class="days"></div>
+            <div id="dayDetail" class="hourly panel" style="margin-top:10px;display:none">
+              <strong id="dayTitle"></strong>
+              <div id="daySummary" class="small" style="margin-top:6px"></div>
+              <div style="margin-top:8px;overflow:auto">
+                <table id="hourTable"><thead><tr><th>Time</th><th>Temp</th><th>Cond</th><th>Precip</th><th>Wind</th></tr></thead><tbody></tbody></table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel">
+          <strong>Extras</strong>
+          <div class="small" style="margin-top:8px">Air Quality & Alerts (if available)</div>
+          <div id="aqi" style="margin-top:8px" class="small">AQI: --</div>
+          <div id="alerts" style="margin-top:8px" class="small">No alerts</div>
+
+          <div style="margin-top:12px">
+            <strong>Quick Stats</strong>
+            <div class="small" style="margin-top:6px">UV, Visibility, Cloud cover</div>
+            <div style="margin-top:8px">
+              <div class="small">UV Index: <span id="uv">--</span></div>
+              <div class="small">Visibility: <span id="vis">--</span> km</div>
+              <div class="small">Cloud: <span id="cloud">--</span>%</div>
+            </div>
+          </div>
+
+        </aside>
+      </main>
+
+      <footer>Data from WeatherAPI. Use your own API key in the script. Demo shows current + 7-day forecast and hourly breakdown.</footer>
+    </div>
+  </div>
+
+  <script>
+    // Replace with the key you provided or set here
+    const KEY = '60e6867990644760a42115039251708';
+    const BASE = 'https://api.weatherapi.com/v1/forecast.json';
+
+    const els = {
+      q: document.getElementById('query'),
+      search: document.getElementById('search'),
+      current: document.getElementById('current'),
+      cicon: document.getElementById('cicon'),
+      cplace: document.getElementById('cplace'),
+      ctemp: document.getElementById('ctemp'),
+      ccond: document.getElementById('ccond'),
+      cfeels: document.getElementById('cfeels'),
+      chumidity: document.getElementById('chumidity'),
+      cwind: document.getElementById('cwind'),
+      days: document.getElementById('days'),
+      dayDetail: document.getElementById('dayDetail'),
+      dayTitle: document.getElementById('dayTitle'),
+      daySummary: document.getElementById('daySummary'),
+      hourTableBody: document.querySelector('#hourTable tbody'),
+      aqi: document.getElementById('aqi'),
+      alerts: document.getElementById('alerts'),
+      uv: document.getElementById('uv'),
+      vis: document.getElementById('vis'),
+      cloud: document.getElementById('cloud'),
+      error: document.getElementById('error')
+    };
+
+    function unit(){return document.querySelector('input[name="unit"]:checked').value}
+    function fmtTemp(v){ return unit() === 'C' ? `${v}°C` : `${Math.round(v * 9/5 + 32)}°F`; }
+
+    function setError(msg){ els.error.textContent = msg; }
+    function clearError(){ els.error.textContent = ''; }
+
+    async function fetchWeather(q){
+      clearError();
+      if(!q || !q.trim()){ setError('Enter a location'); return; }
+      const url = `${BASE}?key=${encodeURIComponent(KEY)}&q=${encodeURIComponent(q.trim())}&days=7&aqi=yes&alerts=yes`;
+      try{
+        const r = await fetch(url);
+        if(!r.ok){ throw new Error(`HTTP ${r.status}`); }
+        const data = await r.json();
+        renderAll(data);
+      }catch(e){ console.error(e); setError('Could not fetch data. Check API key or location.'); }
+    }
+
+    function renderAll(data){
+      // Current
+      const loc = data.location;
+      const cur = data.current;
+      els.current.style.display = 'flex';
+      const icon = cur.condition.icon.startsWith('//') ? 'https:' + cur.condition.icon : cur.condition.icon;
+      els.cicon.src = icon;
+      els.cplace.textContent = `${loc.name}, ${loc.region || loc.country}`;
+      els.ctemp.textContent = fmtTemp(cur.temp_c);
+      els.ccond.textContent = `${cur.condition.text} • Local time: ${loc.localtime}`;
+      els.cfeels.textContent = `Feels: ${fmtTemp(cur.feelslike_c)}`;
+      els.chumidity.textContent = `Humidity: ${cur.humidity}%`;
+      els.cwind.textContent = `Wind: ${cur.wind_kph} kph`;
+      els.uv.textContent = cur.uv;
+      els.vis.textContent = cur.vis_km;
+      els.cloud.textContent = cur.cloud;
+
+      // AQI
+      if(data.current && data.current.air_quality){
+        const aq = data.current.air_quality;
+        // show PM2.5 if available
+        const pm25 = aq['pm2_5'] ? Math.round(aq['pm2_5']) : 'N/A';
+        els.aqi.textContent = `PM2.5: ${pm25}`;
+      } else { els.aqi.textContent = 'AQI: Not available'; }
+
+      // Alerts
+      if(data.alerts && data.alerts.alert && data.alerts.alert.length){
+        els.alerts.innerHTML = data.alerts.alert.map(a=>`<div style="margin-top:6px"><strong>${a.headline}</strong><div class="small">${a.msg}</div></div>`).join('');
+      } else { els.alerts.textContent = 'No alerts'; }
+
+      // Forecast days
+      const days = data.forecast.forecastday;
+      els.days.innerHTML = '';
+      days.forEach((d, idx)=>{
+        const el = document.createElement('div'); el.className='day';
+        if(idx===0) el.classList.add('active');
+        el.innerHTML = `<div class="date">${d.date}</div>
+                        <div style='display:flex;align-items:center;gap:8px;margin-top:6px'>
+                          <img src='${d.day.condition.icon.startsWith('//')? 'https:'+d.day.condition.icon : d.day.condition.icon}' width='36' alt=''>
+                          <div>
+                            <div class='maxtemp'>${fmtTemp(d.day.maxtemp_c)}</div>
+                            <div class='small'>${d.day.condition.text}</div>
+                          </div>
+                        </div>
+                        <div style='margin-top:8px' class='small'>Min: ${fmtTemp(d.day.mintemp_c)} • Rain: ${d.day.daily_chance_of_rain}%</div>`;
+        el.addEventListener('click', ()=>{ document.querySelectorAll('.day').forEach(x=>x.classList.remove('active')); el.classList.add('active'); showDayDetail(d); });
+        els.days.appendChild(el);
+      });
+
+      // Show first day detail
+      showDayDetail(days[0]);
+    }
+
+    function showDayDetail(day){
+      els.dayDetail.style.display = 'block';
+      els.dayTitle.textContent = `${day.date} — ${day.day.condition.text}`;
+      els.daySummary.innerHTML = `Max: ${fmtTemp(day.day.maxtemp_c)}, Min: ${fmtTemp(day.day.mintemp_c)} • Avg: ${fmtTemp(day.day.avgtemp_c)} • Chance Rain: ${day.day.daily_chance_of_rain}%`;
+      // hourly table
+      els.hourTableBody.innerHTML = '';
+      day.hour.forEach(h=>{
+        const tr = document.createElement('tr');
+        const time = h.time.split(' ')[1];
+        const icon = h.condition.icon.startsWith('//')? 'https:'+h.condition.icon : h.condition.icon;
+        tr.innerHTML = `<td>${time}</td><td>${fmtTemp(h.temp_c)}</td><td><img src='${icon}' style='vertical-align:middle' width='28'/> ${h.condition.text}</td><td>${h.precip_mm} mm</td><td>${h.wind_kph} kph</td>`;
+        els.hourTableBody.appendChild(tr);
+      });
+    }
+
+    // events
+    els.search.addEventListener('click', ()=>fetchWeather(els.q.value));
+    els.q.addEventListener('keydown', e=>{ if(e.key==='Enter') fetchWeather(els.q.value) });
+    document.querySelectorAll('input[name="unit"]').forEach(r=>r.addEventListener('change', ()=>{ // re-render active data by re-searching
+      const loc = document.getElementById('cplace').textContent.split(',')[0]; if(loc) fetchWeather(loc);
+    }));
+
+    // preload a city
+    window.addEventListener('DOMContentLoaded', ()=>{ els.q.value='London'; fetchWeather('London'); });
+  </script>
+</body>
+</html>
