@@ -1,5 +1,3 @@
-.
-
 🌦️ Weather App
 
 A simple yet feature-rich weather web application that displays current weather conditions, 7-day forecast, hourly breakdown, air quality index (AQI), and alerts for any city. Users can search locations, view interactive weather cards, and toggle between °C/°F.
