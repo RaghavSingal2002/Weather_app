@@ -34,7 +34,7 @@ WeatherAPI – WeatherAPI.com for real-time weather data
 
 Base Endpoint:
 
-http://api.weatherapi.com/v1
+http://127.0.0.1:5500/Weather_app.html
 
 
 APIs Integrated:
